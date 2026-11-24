@@ -37,6 +37,9 @@ export const createHint = (link: Hint): HintItem => {
       : max_(left, (left + rect.r - GlobalConsts.MaxHeightOfLinkHintMarker) / 2)
   marker.className = isBox ? "LH BH" : "LH";
   st.left = i + P;
+  // size of the clickable area, used to highlight unlabeled flash hints
+  isBox || st.setProperty("--fw", max_(rect.r - i, 6) + P)
+  isBox || st.setProperty("--fh", max_(rect.b - top, 6) + P)
   if ((!OnChrome || Build.MinCVer < BrowserVer.MinAbsolutePositionNotCauseScrollbar)
       && i > maxLeft_ && maxRight_) {
     st.maxWidth = maxRight_ - i + P;
@@ -379,8 +382,11 @@ export const getMatchingHints = (keyStatus: KeyStatus, text: string, seq: string
 const flashRelabel = (hints: readonly FilteredHintItem[], text: string): void => {
   const search = text.trim(), words = search.split(" "), last = words[words.length - 1]
   let chars = ""
-  // no labels (only dots) before any text is typed or when a new search word has just started
-  if (search && text.slice(-1) !== " ") {
+  if (!search && text) {
+    // a leading space is a wildcard: label every hint (textless ones are sorted first and get shorter labels)
+    for (const ch of hintChars) { chars.includes(ch) || (chars += ch) }
+  } else if (search && text.slice(-1) !== " ") {
+    // otherwise, no labels (only highlights) before any text is typed or when a new search word has just started
     const excluded: SafeDict<1> = Object.create(null)
     for (const { h: { t: hintText } } of hints) {
       for (let pos = hintText.indexOf(last); pos >= 0; pos = hintText.indexOf(last, pos + 1)) {
@@ -405,7 +411,7 @@ const flashRelabel = (hints: readonly FilteredHintItem[], text: string): void =>
     firstChild && removeEl_s(firstChild)
     const textNode = marker.firstChild as Text | null // null before renderMarkers
     textNode && (textNode.data = label)
-    // unlabeled matches still show where they are, as a small dot
+    // unlabeled matches still show where they are, as a faint highlight
     toggleClass_s(marker, "FI", !label)
     setVisibility_s(marker, 1)
   }
@@ -538,7 +544,7 @@ export const matchHintsByKey = (keyStatus: KeyStatus
     let lower = Lower(keybody)
     keybody = useFilter_ ? keybody : lower.toUpperCase() as kChar;
     useFilter_ && resetMode();
-    if (useFlash_ ? keybody === lower && textSeq.slice(-1) !== " "
+    if (useFlash_ ? keybody === lower && (textSeq.slice(-1) !== " " || !textSeq.trim())
           && /*#__NOINLINE__*/ hasLabelPrefix(hintArray, sequence + keybody)
         : hintChars.includes(keybody)
         && !(useFilter_ && key === "a-" + keybody && keybody < kChar.minNotNum && keybody > kChar.maxNotNum)) {
