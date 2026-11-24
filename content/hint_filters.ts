@@ -379,7 +379,7 @@ export const getMatchingHints = (keyStatus: KeyStatus, text: string, seq: string
 const flashRelabel = (hints: readonly FilteredHintItem[], text: string): void => {
   const search = text.trim(), words = search.split(" "), last = words[words.length - 1]
   let chars = ""
-  // no labels before any text is typed or when a new search word has just started
+  // no labels (only dots) before any text is typed or when a new search word has just started
   if (search && text.slice(-1) !== " ") {
     const excluded: SafeDict<1> = Object.create(null)
     for (const { h: { t: hintText } } of hints) {
@@ -405,7 +405,9 @@ const flashRelabel = (hints: readonly FilteredHintItem[], text: string): void =>
     firstChild && removeEl_s(firstChild)
     const textNode = marker.firstChild as Text | null // null before renderMarkers
     textNode && (textNode.data = label)
-    setVisibility_s(marker, !!label)
+    // unlabeled matches still show where they are, as a small dot
+    toggleClass_s(marker, "FI", !label)
+    setVisibility_s(marker, 1)
   }
 }
 
