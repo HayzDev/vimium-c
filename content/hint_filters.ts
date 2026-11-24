@@ -37,9 +37,13 @@ export const createHint = (link: Hint): HintItem => {
       : max_(left, (left + rect.r - GlobalConsts.MaxHeightOfLinkHintMarker) / 2)
   marker.className = isBox ? "LH BH" : "LH";
   st.left = i + P;
-  // size of the clickable area, used to highlight unlabeled flash hints
-  isBox || st.setProperty("--fw", max_(rect.r - i, 6) + P)
-  isBox || st.setProperty("--fh", max_(rect.b - top, 6) + P)
+  // size of the clickable area, used to highlight unlabeled flash hints;
+  // large areas (often empty panels with click listeners) only get a small corner marker
+  const flashW = rect.r - i, flashH = rect.b - top
+  if (!isBox && flashH < 241 && (flashW < 481 || flashH < 121)) {
+    st.setProperty("--fw", max_(flashW, 6) + P)
+    st.setProperty("--fh", max_(flashH, 6) + P)
+  }
   if ((!OnChrome || Build.MinCVer < BrowserVer.MinAbsolutePositionNotCauseScrollbar)
       && i > maxLeft_ && maxRight_) {
     st.maxWidth = maxRight_ - i + P;
