@@ -5,7 +5,7 @@ import {
 } from "../lib/dom_utils"
 import {
   HintItem, FilteredHintItem, MarkerElement, HintText, isHC_,
-  hintMode_, useFilter_, hintKeyStatus, KeyStatus, hintChars, allHints, setMode, resetMode, hintOptions
+  hintMode_, useFilter_, useFlash_, hintKeyStatus, KeyStatus, hintChars, allHints, setMode, resetMode, hintOptions
 } from "./link_hints"
 import { bZoom_, boundingRect_, dimSize_, WithOldZoom,  } from "../lib/rect"
 import { BSP, DEL, ENTER, SPC } from "../lib/keyboard_utils"
@@ -299,7 +299,8 @@ export const getMatchingHints = (keyStatus: KeyStatus, text: string, seq: string
             hints[n] = item;
           }
         }
-        for (let base = hintChars.length, is10Digits = hintChars === kNumbers, i = 0; i < hints.length; i++) {
+        for (let base = hintChars.length, is10Digits = hintChars === kNumbers, i = useFlash_ ? hints.length : 0
+            ; i < hints.length; i++) {
           let hintString = "", num = is10Digits ? 0 : i + 1;
           for (; num; num = (num / base) | 0) {
             hintString = hintChars[num % base] + hintString;
@@ -309,7 +310,7 @@ export const getMatchingHints = (keyStatus: KeyStatus, text: string, seq: string
       }
       // hints[].zIndex is reset in .MakeStacks_
       if (inited && (newLen || oldKeySeq)) {
-      for (const hint of newLen ? hints : oldHintArray) {
+      for (const hint of useFlash_ ? [] : newLen ? hints : oldHintArray) {
         const firstChild = hint.m.firstElementChild
         firstChild && removeEl_s(firstChild);
         (hint.m.firstChild as Text).data = hint.a;
@@ -320,9 +321,11 @@ export const getMatchingHints = (keyStatus: KeyStatus, text: string, seq: string
       }
       if (!newLen) {
         keyStatus.t = oldTextSeq;
+        useFlash_ && inited && flashRelabel(keyStatus.c as FilteredHintItem[], oldTextSeq)
         return 2;
       }
     }
+    useFlash_ && /*#__NOINLINE__*/ flashRelabel(hints, text)
   }
   const hintsMatchingSeq = seq ? hints.filter(hint => hint.a.startsWith(seq)) : hints
   const newMatchingSeq = hintsMatchingSeq.length
@@ -332,7 +335,7 @@ export const getMatchingHints = (keyStatus: KeyStatus, text: string, seq: string
     zIndexes_ = zIndexes_ && null;
     if (newMatchingSeq < 2) { return newMatchingSeq ? hintsMatchingSeq[0] : 0 }
     for (const { m: marker, a: key } of hints) {
-      const match = key.startsWith(seq);
+      const match = !!key && key.startsWith(seq);
       setVisibility_s(marker, match)
       if (match) {
         let child = marker.firstChild!
@@ -370,6 +373,43 @@ export const getMatchingHints = (keyStatus: KeyStatus, text: string, seq: string
 }
 
 /**
+ * flash.nvim-like labels: only use chars which can not be the next char of the filter text in any matched hint,
+ * so that typing more of a link's text never conflicts with a label
+ */
+const flashRelabel = (hints: readonly FilteredHintItem[], text: string): void => {
+  const search = text.trim(), words = search.split(" "), last = words[words.length - 1]
+  let chars = ""
+  // no labels before any text is typed or when a new search word has just started
+  if (search && text.slice(-1) !== " ") {
+    const excluded: SafeDict<1> = Object.create(null)
+    for (const { h: { t: hintText } } of hints) {
+      for (let pos = hintText.indexOf(last); pos >= 0; pos = hintText.indexOf(last, pos + 1)) {
+        pos + last.length < hintText.length && (excluded[hintText[pos + last.length]] = 1)
+      }
+    }
+    for (const ch of hintChars) { excluded[ch] || chars.includes(ch) || (chars += ch) }
+  }
+  const count = hints.length, labels = [""]
+  let offset = 0
+  if (chars) {
+    // breadth-first and prefix-free: shorter labels go to better-matched hints
+    while (labels.length - offset < count || !offset) {
+      const prefix = labels[offset++]
+      for (const ch of chars) { labels.push(prefix + ch) }
+    }
+  }
+  for (let i = 0; i < count; i++) {
+    const hint = hints[i], marker = hint.m, label = chars ? labels[offset + i] : ""
+    hint.a = label
+    const firstChild = marker.firstElementChild
+    firstChild && removeEl_s(firstChild)
+    const textNode = marker.firstChild as Text | null // null before renderMarkers
+    textNode && (textNode.data = label)
+    setVisibility_s(marker, !!label)
+  }
+}
+
+/**
  * total / Math.log(~)
  * * `>=` 1 / `Math.log`(1 + (MaxLengthOfHintText = 256)) `>` 0.18
  * * margin `>=` `0.0001267`
@@ -402,7 +442,8 @@ export const renderMarkers = (hintItemArray: readonly HintItem[]): void => {
   for (const hint of hintItemArray) {
     const marker = hint.m;
     if (useFilter_) {
-      marker.textContent = hint.a;
+      // flash labels may be empty now, but a text node is still needed for later labels
+      useFlash_ ? appendNode_s(marker, new Text(hint.a)) : marker.textContent = hint.a
       right = hint.h!.t;
       if (!right || right[0] !== ":") { continue; }
       right = hint.h!.t = right.slice(1);
@@ -462,6 +503,11 @@ export const initAlphabetEngine = (hintItems: readonly HintItem[]): void => {
 }
 }
 
+const hasLabelPrefix = (hints: readonly HintItem[], prefix: string): boolean => {
+  for (const hint of hints) { if (hint.a && hint.a.startsWith(prefix)) { return true } }
+  return false
+}
+
 export const matchHintsByKey = (keyStatus: KeyStatus
     , event: HandlerNS.Event, key: string, keybody: kChar): HintItem | 0 | 2 => {
   let doesDetectMatchSingle: 0 | 1 | 2 = 0, isSpace = keybody === SPC, isTab = keybody === kChar.tab
@@ -490,12 +536,14 @@ export const matchHintsByKey = (keyStatus: KeyStatus
     let lower = Lower(keybody)
     keybody = useFilter_ ? keybody : lower.toUpperCase() as kChar;
     useFilter_ && resetMode();
-    if (hintChars.includes(keybody)
+    if (useFlash_ ? keybody === lower && textSeq.slice(-1) !== " "
+          && /*#__NOINLINE__*/ hasLabelPrefix(hintArray, sequence + keybody)
+        : hintChars.includes(keybody)
         && !(useFilter_ && key === "a-" + keybody && keybody < kChar.minNotNum && keybody > kChar.maxNotNum)) {
       sequence += keybody;
       doesDetectMatchSingle = useFilter_ || sequence.length < maxPrefixLen_ ? 1 : 2;
     } else if (useFilter_) {
-      if (keybody !== lower && hintChars !== Lower(hintChars) // ignore {Lo} in chars_
+      if (keybody !== lower && !useFlash_ && hintChars !== Lower(hintChars) // ignore {Lo} in chars_
           /** this line requires lower.length must be 1 or 0 */
           || (nonMatchedRe_ || (nonMatchedRe_ = createRegExp(kTip.notMatchedHintText, "g") as RegExpG & RegExpOne)
               ).test(lower)) {

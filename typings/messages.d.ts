@@ -294,6 +294,7 @@ declare namespace HintsNS {
     else?: object | string | null | void | false
     ordinal?: boolean
     useFilter?: boolean;
+    /** label hints with chars which can not continue the filter text, like flash.nvim */ flashFilter?: boolean
     onTop?: boolean | "host-re##fake-selector;..." | null
     url?: boolean;
     // access el.dataset[<json keys>] || el.attrs[key][json keys]

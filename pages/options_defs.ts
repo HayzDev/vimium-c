@@ -666,6 +666,7 @@ export const onKeyMappingsError_ = (err: string | true): void => {
 const linkHintCharactersOption_ = Option_.all_.linkHintCharacters
 const linkHintNumbersOption_ = Option_.all_.linkHintNumbers
 const filterLinkHintsOption_ = Option_.all_.filterLinkHints
+const flashLinkHintsOption_ = Option_.all_.flashLinkHints
 linkHintCharactersOption_.onSave_ = linkHintNumbersOption_.onSave_ = function (): void {
   this.showError_(!this.element_.style.display && this.previous_.length < GlobalConsts.MinHintCharSetSize
       ? "Too few characters for LinkHints" : "")
@@ -673,14 +674,18 @@ linkHintCharactersOption_.onSave_ = linkHintNumbersOption_.onSave_ = function ()
 filterLinkHintsOption_.onSave_ = function (): void {
   nextTick_((): void => {
     const enableFilterLinkHints = filterLinkHintsOption_.readValueFromElement_() // also used during change events
-    linkHintNumbersOption_.element_.style.display = enableFilterLinkHints ? "" : "none"
-    linkHintCharactersOption_.element_.style.display = enableFilterLinkHints ? "none" : ""
+    const useChars = !enableFilterLinkHints || flashLinkHintsOption_.readValueFromElement_()
+    linkHintNumbersOption_.element_.style.display = useChars ? "none" : ""
+    linkHintCharactersOption_.element_.style.display = useChars ? "" : "none"
     BooleanOption_.ToggleDisabled_(Option_.all_.waitForEnter.element_, !enableFilterLinkHints)
+    BooleanOption_.ToggleDisabled_(flashLinkHintsOption_.element_, !enableFilterLinkHints)
     void linkHintCharactersOption_.onSave_()
     void linkHintNumbersOption_.onSave_()
   })
 }
 delayBinding_(filterLinkHintsOption_.element_, "change", filterLinkHintsOption_.onSave_, true)
+flashLinkHintsOption_.onSave_ = filterLinkHintsOption_.onSave_
+delayBinding_(flashLinkHintsOption_.element_, "change", filterLinkHintsOption_.onSave_, true)
 
 const keyLayout = Option_.all_.keyLayout
 const [elAlwaysIgnore, elIgnoreIfAlt, elIgnoreIfNotASCII, elIgnoreCaps, elMapModifier, elInPrivResistFp] =

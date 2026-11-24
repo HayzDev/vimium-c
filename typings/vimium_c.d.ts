@@ -304,6 +304,7 @@ declare namespace SettingsNS {
     /** linkHintCharacters */ c: ["linkHintCharacters", string];
     /** linkHintNumbers */ n: ["linkHintNumbers", string];
     /** filterLinkHints */ f: ["filterLinkHints", boolean];
+    /** flashLinkHints */ j: ["flashLinkHints", boolean];
     /** waitForEnter */ w: ["waitForEnter", boolean];
     /** mouseReachable */ e: ["mouseReachable", boolean];
     /** passEsc */ p: ["passEsc", string];

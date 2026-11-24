@@ -140,6 +140,7 @@ let tooHigh_: null | BOOL = 0
 let isClickListened_ = true
 let chars_ = ""
 let useFilter_: boolean
+let useFlash_: boolean = false
 let keyStatus_: KeyStatus
   /** must be called from a manager, required by {@link #delayToExecute_ } */
 let onTailEnter: ((this: unknown, event: HandlerNS.Event, key: string, keybody: kChar) => void) | null | undefined
@@ -156,7 +157,7 @@ let doesAllowModifierEvents_ff: BOOL = 0
 
 export {
   isActive as isHintsActive, box_ as hint_box, wantDialogMode_,
-  hints_ as allHints, keyStatus_ as hintKeyStatus, useFilter_, chars_ as hintChars,
+  hints_ as allHints, keyStatus_ as hintKeyStatus, useFilter_, useFlash_, chars_ as hintChars,
   mode_ as hintMode_, mode1_, options_ as hintOptions, count_ as hintCount_,
   forHover_, isClickListened_, tooHigh_, kSafeAllSelector, addChildFrame_,
   api_ as hintApi, manager_ as hintManager, isHC_
@@ -192,7 +193,9 @@ export const activate = (options: ContentOptions, count: number, force?: 2 | Tim
     const useFilter0 = options.useFilter, useFilter = useFilter0 != null ? !!useFilter0 : fgCache.f,
     topFrameInfo: FrameHintsInfo = {h: [], v: null as never, s: coreHints},
     toCleanArray: HintOfficer[] = [], wantTop = options.onTop,
-    chars: string = options.c ? options.c : useFilter ? fgCache.n : fgCache.c
+    flash0 = options.flashFilter, flash = useFilter && (flash0 != null ? !!flash0 : !!fgCache.j),
+    chars: string = flash ? Lower(options.c || fgCache.c) : options.c ? options.c : useFilter ? fgCache.n : fgCache.c
+    useFlash_ = flash
     frameArray = [topFrameInfo]
     isHC_ = matchMedia(VTr(
         OnChrome && Build.MinCVer < BrowserVer.MinForcedColorsMode && chromeVer_ < BrowserVer.MinForcedColorsMode

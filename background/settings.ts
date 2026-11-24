@@ -359,6 +359,7 @@ nickyfeng@edgetranslate.com
 saladict@crimx.com`
 : "",
     filterLinkHints: false,
+    flashLinkHints: false,
     grabBackFocus: false,
     hideHud: false,
     ignoreReadonly: GlobalConsts.kCssDefault as const
@@ -521,7 +522,7 @@ export const frontUpdateAllowed_: ReadonlyArray<keyof SettingsNS.FrontUpdateAllo
 
 export const valuesToLoad_ = {
     __proto__: null as never,
-    filterLinkHints: "f", hideHud: "h", ignoreReadonly: "y", keyLayout: "l", keyboard: "k", keyupTime: "u",
+    filterLinkHints: "f", flashLinkHints: "j", hideHud: "h", ignoreReadonly: "y", keyLayout: "l", keyboard: "k", keyupTime: "u",
     linkHintCharacters: "c", linkHintNumbers: "n", mouseReachable: "e", passEsc: "p",
     regexFindMode: "r", smoothScroll: "s", scrollStepSize: "t", waitForEnter: "w"
 } satisfies SettingsNS.AutoSyncedNameMap & SafeObject as SettingsNS.AutoSyncedNameMap

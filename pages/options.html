@@ -381,6 +381,20 @@ key: https://c.com/$s/space=\s\ space_end
           <td class="caption"></td>
           <td>
             <label class="booleanOption" tabindex="-1" aria-hidden="true">
+              <input id="flashLinkHints" type="checkbox" tabindex="-1" aria-hidden="true" data-model="Boolean" />
+              <span class="checkboxHint" role="checkbox" tabindex="0" aria-hidden="false"
+                >Label filtered hints like flash.nvim</span>
+            </label>
+          </td>
+          <td class="help"><div class="help-inner line-help">
+            Hints are labeled with "Characters used for link hints", skipping any character that could continue
+            the text you have typed, so you can keep typing a link's name or press its label at any time.
+          </div></td>
+        </tr>
+        <tr>
+          <td class="caption"></td>
+          <td>
+            <label class="booleanOption" tabindex="-1" aria-hidden="true">
               <input id="waitForEnter" type="checkbox" tabindex="-1" aria-hidden="true" data-model="Boolean" />
               <span data-i="44_4" class="checkboxHint" role="checkbox" tabindex="0" aria-hidden="false"
                 >Require "Enter" when filtering hints</span>
